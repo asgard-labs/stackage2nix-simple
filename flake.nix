@@ -9,14 +9,26 @@
       inherit system;
       overlays = [ inputs.haskell-nix.overlay ];
     };
-  in {
+  in
 
-    stackage = pkgs.callPackage ./stackage2nix-simple.nix {};
+    {
+
+    aux-nix-generator = import ./aux-nix-generator.nix {
+      inherit pkgs;
+      inherit (inputs) haskell-nix;
+      inherit (pkgs) lib;
+    };
+
+    stackage = let
+      inherit (self.aux-nix-generator) get-ghc-nix-name;
+      in pkgs.callPackage ./stackage2nix-simple.nix {
+        inherit pkgs get-ghc-nix-name;
+        inherit (pkgs) lib;};
 
     apps.${system}.default = let
       inherit (builtins) fromJSON readFile;
       inherit (pkgs) lib;
-      inherit (self.stackage) pkg-identifiers-json resolvers-json;
+      inherit (self.aux-nix-generator) pkg-identifiers-json resolvers-json;
       resolvers = fromJSON (readFile resolvers-json);
       script-bin = pkgs.writeScriptBin "update-nix-files.sh" ''
 
@@ -38,11 +50,11 @@
       program = "${script-bin}/bin/update-nix-files.sh";
     };
 
-    packages.${system}.default =
-      pkgs.linkFarmFromDrvs "pkg-identifiers" (__attrValues self.stackage.pkg-identifiers-json);
-      #pkgs.linkFarmFromDrvs "pkg-identifiers" [self.stackage.pkg-identifiers-json."lts-19.3"];
+    # packages.${system}.default =
+    #   # pkgs.linkFarmFromDrvs "pkg-identifiers" (__attrValues self.stackage.pkg-identifiers-json);
+    #   pkgs.linkFarmFromDrvs "pkg-identifiers" [self.stackage.pkg-identifiers."lts-19.3"];
 
-    inherit (pkgs) lib;
+    # inherit (pkgs) lib;
 
   };
 
