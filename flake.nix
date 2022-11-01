@@ -15,8 +15,7 @@
 
     aux-nix-generator = import ./aux-nix-generator.nix {
       inherit pkgs;
-      inherit (inputs) haskell-nix;
-      inherit (pkgs) lib;
+      inherit (pkgs) lib haskell-nix;
     };
 
     stackage = let
